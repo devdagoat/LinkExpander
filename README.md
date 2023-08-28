@@ -20,7 +20,7 @@ First, download and install the dependencies:
 
 `py -m pip install -r requirements.txt`
 
-Then, place the script inside your project directory and import it:
+Then, place the script inside your project directory and import the function:
 
 ```python
 from LinkExpander import gather_links
