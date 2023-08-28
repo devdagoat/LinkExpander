@@ -1,6 +1,8 @@
 # LinkExpander
 Link expander in Python which parses and returns the URLs and information in common link domains. (The currently supported links are in below)
 
+**REQUIRES PYTHON>=3.10**
+
 ## Supported Links:
 
 - **Linktr.ee**
