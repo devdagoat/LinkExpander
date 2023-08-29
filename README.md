@@ -56,8 +56,8 @@ The typical returned dictionary looks like this:
 "username" : "Some username",
 "avatar" : "URL of the avatar",
 "links" : [
-{"title" : "Example1", "domain" : "google.com", "url" : "https://google.com"},
-{"title" : "Example2", "domain" : "facebook.com", "url" : "https://facebook.com/..."}
+  {"title" : "Example1", "domain" : "google.com", "url" : "https://google.com"},
+  {"title" : "Example2", "domain" : "facebook.com", "url" : "https://facebook.com/..."}
   ]
 }
 ```
