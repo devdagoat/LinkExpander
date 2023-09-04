@@ -282,39 +282,47 @@ def beacons(url:str) -> dict:
 
 def allmylinks(url:str) -> dict:
     print("Using Allmylinks.com")
-    resp = requests.get(url, headers=headers)
-    if resp.ok:
-        soup = BeautifulSoup(resp.content, 'html.parser')
 
-        account_username = soup.find('span', {'class' : 'profile-usertag'}).contents[0].replace('@','').strip() # type: ignore
-        account_displayname = soup.find('span', {'class' : 'profile-username profile-page'}).contents[0].strip() # type: ignore
-        account_avatar = soup.find('img', {'alt' : 'Profile avatar'}).get('src') # type: ignore
+    options = uc.ChromeOptions()
+    options.add_argument('headless')
+    #drv = uc.Chrome(driver_executable_path=CHROMEDRIVER, options=options)
+    drv = uc.Chrome(driver_executable_path=ChromeDriverManager().install(), options=options)
+    drv.get(url)
+    drv.reconnect(timeout=3)
 
-        links = soup.find_all('div', {'class' : 'link-content'})
-        packed_links = []
-        for link in links:
-            link_title = link.find('span', {'class' : 'link-title'}).contents[0]
-            link_image = f"{urlparse(url).scheme}://{urlparse(url).netloc}{link.find('img', {'class' : 'cover-img'}).get('src')}"
-            link_url = link.find('a', {'class' : 'list-item link-type-web link', 'title' : True}).get('data-x-url')
-            link_domain = urlparse(link_url).netloc
-            packed_links.append({
-                'title' : link_title,
-                'image' : link_image,
-                'domain' : link_domain,
-                'url' : link_url
-            })
+    timeout = 1000
 
-        packed_info = {
-            'username' : account_username,
-            'displayname' : account_displayname,
-            'avatar' : account_avatar,
-            'links' : packed_links
-        }
-        
-        return packed_info
+    try:
+        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'wrap'))
+        WebDriverWait(drv, timeout).until(element_present)
+    except TimeoutException:
+        print("Waited enough")
 
-    else:
-        raise RuntimeError(f"Allmylinks.com GET Failed: {resp.status_code} :\n\n{resp.text}")  
+    soup = BeautifulSoup(drv.page_source, 'html.parser')
+    account_username = soup.find('span', {'class' : 'profile-usertag'}).contents[0].replace('@','').strip() # type: ignore
+    account_displayname = soup.find('span', {'class' : 'profile-username profile-page'}).contents[0].strip() # type: ignore
+    account_avatar = soup.find('img', {'alt' : 'Profile avatar'}).get('src') # type: ignore
+    links = soup.find_all('div', {'class' : 'link-content'})
+    packed_links = []
+    for link in links:
+        link_title = link.find('span', {'class' : 'link-title'}).contents[0]
+        link_image = f"{urlparse(url).scheme}://{urlparse(url).netloc}{link.find('img', {'class' : 'cover-img'}).get('src')}"
+        link_url = link.find('a', {'class' : 'list-item link-type-web link', 'title' : True}).get('data-x-url')
+        link_domain = urlparse(link_url).netloc
+        packed_links.append({
+            'title' : link_title,
+            'image' : link_image,
+            'domain' : link_domain,
+            'url' : link_url
+        })
+    packed_info = {
+        'username' : account_username,
+        'displayname' : account_displayname,
+        'avatar' : account_avatar,
+        'links' : packed_links
+    }
+    
+    return packed_info
     
 
 def milkshake(url:str) -> dict:
