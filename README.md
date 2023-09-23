@@ -9,12 +9,12 @@ Link expander in Python which parses and returns the URLs and information in com
 - **Hoo.be**
 - **Snipfeed.co**\*
 - **Beacons.ai**
-- **Allmylinks.com**
+- **Allmylinks.com**\*
 - **Msha.ke**
 - **Linkr.bio**
 - **Carrd.co**
 
-_* Snipfeed.co heavily relies on Cloudflare bypass and can be patched at any time. (Despite using UndetectedChromedriver)_
+_* These sites heavily relies on Cloudflare bypass and can be patched at any time. (Despite using UndetectedChromedriver)_
 
 ## Usage
 
