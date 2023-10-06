@@ -13,6 +13,8 @@ Link expander in Python which parses and returns the URLs and information in com
 - **Msha.ke**
 - **Linkr.bio**
 - **Carrd.co**
+- **Lnk.bio**
+- **Direct.me**\*
 
 _* These sites heavily relies on Cloudflare bypass and can be patched at any time. (Despite using UndetectedChromedriver)_
 
