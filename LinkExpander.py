@@ -7,7 +7,7 @@ import undetected_chromedriver as uc
 
 from bs4 import BeautifulSoup
 
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, parse_qs
 
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException
@@ -37,7 +37,6 @@ def linktree_bypass(account_id:int, link_id:int) -> str:
     else:
         raise RuntimeError(f"Linktr.ee BYPASS failed: {resp.status_code} :\n\n{resp.text}")
 
-
 def linktree(url:str) -> dict:
     print("Using Linktr.ee")
     resp = requests.get(url, headers=headers)
@@ -49,7 +48,6 @@ def linktree(url:str) -> dict:
         account_dict = data_dict['props']['pageProps']['account']
         account_id = account_dict['id']
         account_username = account_dict['username']
-        account_tier = account_dict['tier']
         account_avatar = account_dict['profilePictureUrl']
         account_tz = account_dict['timezone']
 
@@ -83,7 +81,6 @@ def linktree(url:str) -> dict:
         packed_info = {
             'id' : account_id,
             'username' : account_username,
-            'tier' : account_tier,
             'avatar' : account_avatar,
             'tz' : account_tz,
             'links' : packed_links
@@ -165,16 +162,16 @@ def hoobe(url:str) -> dict:
 def snipfeed(url:str) -> dict:
     print("Using Snipfeed.co")
     options = uc.ChromeOptions()
-    options.add_argument('headless')
+    #options.add_argument('headless')
     #drv = uc.Chrome(driver_executable_path=CHROMEDRIVER, options=options)
     drv = uc.Chrome(driver_executable_path=ChromeDriverManager().install(), options=options)
     drv.get(url)
-    drv.reconnect(timeout=3)
+    drv.reconnect(timeout=0.2)
 
-    timeout = 1000
+    timeout = 5
 
     try:
-        element_present = EC.presence_of_element_located((By.ID, 'modal-portal'))
+        element_present = EC.presence_of_element_located((By.ID, '__next'))
         WebDriverWait(drv, timeout).until(element_present)
     except TimeoutException:
         print("Waited enough")
@@ -228,7 +225,7 @@ def snipfeed(url:str) -> dict:
         'avatar' : account_avatar,
         'links' : packed_links
     }
-
+    drv.quit()
     return packed_info
 
 
@@ -276,7 +273,7 @@ def beacons(url:str) -> dict:
         'avatar' : account_avatar,
         'links' : packed_links
     }
-
+    drv.quit()
     return packed_info
 
 
@@ -307,7 +304,7 @@ def allmylinks(url:str) -> dict:
     for link in links:
         link_title = link.find('span', {'class' : 'link-title'}).contents[0]
         link_image = f"{urlparse(url).scheme}://{urlparse(url).netloc}{link.find('img', {'class' : 'cover-img'}).get('src')}"
-        link_url = link.find('a', {'class' : 'list-item link-type-web link', 'title' : True}).get('data-x-url')
+        link_url = link.find('a', {'class' : re.compile('link'), 'title' : True}).get('data-x-url')
         link_domain = urlparse(link_url).netloc
         packed_links.append({
             'title' : link_title,
@@ -321,8 +318,9 @@ def allmylinks(url:str) -> dict:
         'avatar' : account_avatar,
         'links' : packed_links
     }
-    
+    drv.quit()
     return packed_info
+
     
 
 def milkshake(url:str) -> dict:
@@ -444,6 +442,109 @@ def carrd(url:str) -> dict:
     else:
         raise RuntimeError(f"Carrd.co GET Failed: {resp.status_code} :\n\n{resp.text}")
 
+def lnkbio_geturl(url:str) -> str:
+    return parse_qs(urlparse(url).query)['d'][0]
+
+def lnkbio(url:str) -> dict:
+    print("Using Lnk.bio")
+    resp = requests.get(url, headers=headers)
+    if resp.ok:
+        soup = BeautifulSoup(resp.content, 'html.parser')
+        account_id = soup.find('input', {'id' : 'LB_UserID'}).get('value') # type: ignore
+        account_tz = soup.find('input', {'id' : 'LB_UserTimezone'}).get('value') # type: ignore
+        account_username = soup.find('a', {'class' : re.compile('pb-username')}).contents[0].replace('@','') # type: ignore
+        account_avatar = soup.find('img', {'id' : 'profile_picture_catch_error'}).get('src') # type: ignore
+
+        packed_links = []
+
+        deeplinks = soup.find('div', {'class' : re.compile('deep-links')}).find_all('a') # type: ignore
+        for deeplink in deeplinks:
+            link_url = lnkbio_geturl(deeplink.get('href'))
+            link_domain = urlparse(link_url).netloc
+            packed_links.append({
+                'domain' : link_domain,
+                'url' : link_url
+            })
+
+        links = soup.find('div', {'id' : 'links_container_overall'}).find_all('a') # type: ignore
+        for link in links:
+            link_id = link.get('id')
+            link_title = link.get('title')
+            link_url = lnkbio_geturl(link.get('href'))
+            link_domain = urlparse(link_url).netloc
+            packed_links.append({
+                'id' : link_id,
+                'title' : link_title,
+                'domain' : link_domain,
+                'url' : link_url
+            })
+        
+        packed_info = {
+            'id' : account_id,
+            'username' : account_username,
+            'avatar' : account_avatar,
+            'tz' : account_tz,
+            'links' : packed_links
+        }
+
+        return packed_info
+
+    else:
+        raise RuntimeError(f"Lnk.bio GET Failed: {resp.status_code} :\n\n{resp.text}")
+
+def directme(url:str) -> dict:
+    print("Using Direct.me")
+    options = uc.ChromeOptions()
+    #options.add_argument('headless')
+    #drv = uc.Chrome(driver_executable_path=CHROMEDRIVER, options=options)
+    drv = uc.Chrome(driver_executable_path=ChromeDriverManager().install(), options=options)
+    drv.get(url)
+    #drv.reconnect(timeout=3)
+
+    timeout = 60
+
+    try:
+        element_present = EC.presence_of_element_located((By.ID, 'profile'))
+        WebDriverWait(drv, timeout).until(element_present)
+    except TimeoutException:
+        print("Waited enough")
+
+    soup = BeautifulSoup(drv.page_source, 'html.parser')
+    
+    account_header = soup.find('div', {'class' : 'profileHeader'})
+    account_username = account_header.find('h1').contents[0].strip() # type: ignore
+    account_avatar = account_header.find('img', {'id' : 'profileAvatar'}).get('src') # type: ignore
+    account_desc = account_header.find('p', {'class' : 'bio'}).contents[0].strip() # type: ignore
+    packed_links = []
+    links = soup.find('div', {'class' : re.compile('profileItemsContainer')}) # type: ignore
+    social_media_icons = links.find('div', {'class' : ('profileSocialIcons')}).find_all('a') # type: ignore
+    for social_media_icon in social_media_icons:
+        link_url = social_media_icon.get('href')
+        link_domain = urlparse(link_url).netloc
+        packed_links.append({
+            'domain' : link_domain,
+            'url' : link_url
+       })
+    main_links = links.find('div').find_all('div', recursive=False)[1:] # type: ignore
+    for main_link in main_links:
+        link_title = main_link.find('div', {'class' : 'profileElementContent'}).find('h2').contents[0]
+        link_url = main_link.find('a').get('href')
+        link_domain = urlparse(link_url).netloc
+        packed_links.append({
+            'title' : link_title,
+            'domain' : link_domain,
+            'url' : link_url
+        })
+
+    packed_info = {
+        'username' : account_username,
+        'avatar' : account_avatar,
+        'description' : account_desc,
+        'links' : packed_links
+    }
+    drv.quit()
+    return packed_info
+
 
 def gather_links(url:str):
     match urlparse(url).netloc:
@@ -463,7 +564,10 @@ def gather_links(url:str):
             return linkr(url)
         case str(string) if "carrd.co" in string:
             return carrd(url)
+        case "lnk.bio":
+            return lnkbio(url)
+        case "direct.me":
+            return directme(url)
         case _:
             raise NotImplementedError(f"{url} not supported yet")
-
 
